@@ -4,8 +4,12 @@
     "strict": true,
     "paths": {
       "@/*": [
-        "./*"
-      ]
+        "./*",
+      ],
+      "@utils/*": ["utils/*"],
+      "@utils": ["utils/index"],
+      "@api": ["api/index"],
+      "@api/*": ["api/*"]
     }
   },
   "include": [
