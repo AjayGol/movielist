@@ -1,5 +1,5 @@
 const Links = {
-  MovieList: "https://api.themoviedb.org/3/discover/movie",
+  MovieList: "https://api.themoviedb.org/3/genre/movie/list",
 };
 
 export { Links };
