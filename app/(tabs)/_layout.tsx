@@ -143,7 +143,7 @@ export default function TabLayout() {
   const handleScroll = (event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     const scrollAtTop = offsetY === 0;
-    if (scrollAtTop) {
+    if (scrollAtTop && selectedGenre === "all") {
       loadMoreMoviesTop();
     }
   };
