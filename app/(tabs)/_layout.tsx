@@ -31,7 +31,7 @@ export default function TabLayout() {
   const [moviesData, setMoviesData] = useState([]);
   const [moviesSectionData, setMoviesSectionData] = useState([]);
   const [currentYear, setCurrentYear] = useState(2012);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     StatusBar.setBarStyle("light-content", true);
@@ -39,7 +39,7 @@ export default function TabLayout() {
       setGenreData(res?.data?.genres);
     });
 
-    fetchMoviesData(currentYear);
+    fetchMoviesData(currentYear, true);
   }, []);
 
   useEffect(() => {
@@ -57,10 +57,11 @@ export default function TabLayout() {
     setMoviesSectionData(getDataSection());
   }, [moviesData, selectedGenre]);
 
-  const fetchMoviesData = async (year) => {
-    if (isLoading || year > new Date().getFullYear()) return;
+  const fetchMoviesData = async (year, init = false) => {
+    if ((isLoading && !init) || year > new Date().getFullYear()) return;
     setIsLoading(true);
     try {
+      console.log(year);
       const { data: moviesData } = await homeHoldingApi.getListMovie({
         primary_release_year: year,
       });
@@ -73,9 +74,11 @@ export default function TabLayout() {
   };
 
   const loadMoreMovies = () => {
-    const nextYear = currentYear + 1;
-    setCurrentYear(nextYear);
-    fetchMoviesData(nextYear);
+    if (!isLoading) {
+      const nextYear = currentYear + 1;
+      fetchMoviesData(nextYear);
+      setCurrentYear(nextYear);
+    }
   };
 
   const renderFooter = () => {
