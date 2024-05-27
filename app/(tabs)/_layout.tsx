@@ -7,12 +7,14 @@ import {
   Text,
   ActivityIndicator,
   SectionList,
+  ListRenderItem,
 } from "react-native";
 import { homeHoldingApi } from "@api";
 import Logo from "../../assets/images/logo.png";
 import GenresSelection from "@/components/GenresSelection";
 import MovieCard from "@/components/MovieCard";
 import useStyles from "./../app.style";
+import { IAllMovie } from "@/app/app.types";
 
 const numColumns = 2;
 
@@ -24,14 +26,21 @@ export default function TabLayout() {
     innerContainerHome,
     flexRow,
     sectionTitle,
+    paddingSectionList,
+    sectionListContainer,
+    initLoaderContainer,
   } = useStyles();
 
   const [genreData, setGenreData] = useState([]);
-  const [selectedGenre, setSelectedGenre] = useState("all");
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [moviesData, setMoviesData] = useState([]);
   const [moviesSectionData, setMoviesSectionData] = useState([]);
-  const [currentYear, setCurrentYear] = useState(2012);
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentYear, setCurrentYear] = useState<number>(2011);
+  const [currentYearPast, setCurrentYearPast] = useState<number>(2011);
+  const [isLoadingAPI, setIsLoadingAPI] = useState<boolean>(true);
+  const [initLoading, setInitLoading] = useState<boolean>(true);
+  const [isLoadingAPIOldYear, setIsLoadingAPIOldYear] =
+    useState<boolean>(false);
 
   useEffect(() => {
     StatusBar.setBarStyle("light-content", true);
@@ -57,32 +66,96 @@ export default function TabLayout() {
     setMoviesSectionData(getDataSection());
   }, [moviesData, selectedGenre]);
 
-  const fetchMoviesData = async (year, init = false) => {
-    if ((isLoading && !init) || year > new Date().getFullYear()) return;
-    setIsLoading(true);
+  const fetchMoviesData = async (year, init = false, isPast = false) => {
+    if ((isLoadingAPI && !init) || year > new Date().getFullYear()) return;
+    setIsLoadingAPI(true);
+    if (isPast) {
+      setIsLoadingAPIOldYear(true);
+    }
     try {
-      console.log(year);
       const { data: moviesData } = await homeHoldingApi.getListMovie({
         primary_release_year: year,
       });
-      if (moviesData) {
-        setMoviesData((prevMovies) => [...prevMovies, ...moviesData?.results]);
+      if (init) {
+        var { data: moviesData2 } = await homeHoldingApi.getListMovie({
+          primary_release_year: year + 1,
+        });
+        setCurrentYear(year);
+        if (moviesData) {
+          setMoviesData((prevMovies) => [
+            ...prevMovies,
+            ...moviesData?.results,
+            ...moviesData2?.results,
+          ]);
+
+          setTimeout(() => {
+            setInitLoading(false);
+            flatListRef.current?.scrollToLocation({
+              sectionIndex: 1,
+              itemIndex: 1,
+              animated: false,
+            });
+          }, 1000);
+        }
+      } else {
+        if (moviesData) {
+          if (isPast) {
+            setMoviesData((prevMovies) => [
+              ...moviesData?.results,
+              ...prevMovies,
+            ]);
+            setIsLoadingAPIOldYear(false);
+            flatListRef.current?.scrollToLocation({
+              sectionIndex: 1,
+              itemIndex: 1,
+              animated: false,
+            });
+          } else {
+            setMoviesData((prevMovies) => [
+              ...prevMovies,
+              ...moviesData?.results,
+            ]);
+          }
+        }
       }
     } finally {
-      setIsLoading(false);
+      setIsLoadingAPI(false);
+      setIsLoadingAPIOldYear(false);
     }
   };
 
   const loadMoreMovies = () => {
-    if (!isLoading) {
+    if (!isLoadingAPI) {
       const nextYear = currentYear + 1;
       fetchMoviesData(nextYear);
       setCurrentYear(nextYear);
     }
   };
 
+  const loadMoreMoviesTop = () => {
+    if (!isLoadingAPI && !initLoading) {
+      const pastYear = currentYearPast - 1;
+      fetchMoviesData(pastYear, false, true);
+      setCurrentYearPast(pastYear);
+    }
+  };
+
+  const handleScroll = (event) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const scrollAtTop = offsetY === 0;
+    if (scrollAtTop) {
+      loadMoreMoviesTop();
+    }
+  };
+
+  const renderHeader = () => {
+    return isLoadingAPIOldYear ? (
+      <ActivityIndicator size="small" color="#fff" style={{ marginTop: 20 }} />
+    ) : null;
+  };
+
   const renderFooter = () => {
-    return isLoading ? (
+    return isLoadingAPI ? (
       <ActivityIndicator size="small" color="#fff" style={{ marginTop: 20 }} />
     ) : null;
   };
@@ -129,10 +202,14 @@ export default function TabLayout() {
     return <Text style={sectionTitle}>{title}</Text>;
   }, []);
 
-  const renderItem = useCallback(
-    ({ item, index }: { section: any }) => {
+  const renderItem: ListRenderItem<IAllMovie> = useCallback(
+    ({ item, index, section }) => {
+      const sectionIndex = moviesSectionData.findIndex(
+        (sec) => sec.title === section.title,
+      );
+
       if (index % numColumns === 0) {
-        const items = moviesSectionData[0].data.slice(
+        const items = moviesSectionData[sectionIndex].data.slice(
           index,
           index + numColumns,
         );
@@ -163,20 +240,29 @@ export default function TabLayout() {
           />
         </View>
 
-        <SectionList
-          ref={flatListRef}
-          sections={moviesSectionData}
-          keyExtractor={(item, index) => item + index}
-          renderItem={renderItem}
-          numColumns={2}
-          renderSectionHeader={renderItemSection}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          style={{ marginTop: 20 }}
-          onEndReached={loadMoreMovies}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={sectionListContainer}>
+          <SectionList
+            ref={flatListRef}
+            sections={moviesSectionData}
+            keyExtractor={(item, index) => item + index}
+            renderItem={renderItem}
+            numColumns={2}
+            renderSectionHeader={renderItemSection}
+            contentContainerStyle={paddingSectionList}
+            onEndReached={loadMoreMovies}
+            onEndReachedThreshold={0.5}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderFooter}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          />
+          {initLoading && (
+            <View style={initLoaderContainer}>
+              <ActivityIndicator size={"small"} />
+            </View>
+          )}
+        </View>
       </SafeAreaView>
     </>
   );

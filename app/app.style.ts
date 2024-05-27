@@ -21,6 +21,18 @@ const useStyles = () => {
       color: "#FFFFFF",
       backgroundColor: "#121212",
     },
+    paddingSectionList: { paddingHorizontal: 16 },
+    sectionListContainer: { flex: 1, backgroundColor: "#121212" },
+    initLoaderContainer: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#121212",
+    },
   });
 };
 

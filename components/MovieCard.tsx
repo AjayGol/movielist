@@ -1,10 +1,16 @@
-import React from "react";
+import React, { PropsWithChildren } from "react";
 import { Image } from "expo-image";
 import { Text, View } from "react-native";
 import { urlPath } from "@utils";
 import useStyles from "@/components/components.style";
+import { IAllMovie } from "@/app/app.types";
 
-const MovieCard = ({ movie, subIndex }) => {
+type Props = PropsWithChildren<{
+  movie: IAllMovie;
+  subIndex: number;
+}>;
+
+const MovieCard = ({ movie, subIndex }: Props) => {
   const {
     cardContainer,
     poster,
@@ -29,7 +35,10 @@ const MovieCard = ({ movie, subIndex }) => {
         </Text>
         <Text
           style={movieName}
-        >{`${Math.round(movie?.vote_average)} / 10`}</Text>
+        >{`${Math.round(movie.vote_average)} / 10`}</Text>
+        <Text style={movieName} numberOfLines={1}>
+          {movie?.overview}
+        </Text>
       </View>
     </View>
   );
