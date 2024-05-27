@@ -7,4 +7,8 @@ const prettify = (string: string, delimitter = " ") => {
   return [capitalizedFirstWord, ...remainingWords].join(delimitter);
 };
 
-export { prettify };
+const urlPath = (string: string) => {
+  return `https://image.tmdb.org/t/p/original${string}`;
+};
+
+export { prettify, urlPath };
